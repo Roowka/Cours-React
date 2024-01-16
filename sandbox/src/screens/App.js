@@ -8,8 +8,6 @@ import { Outlet, useNavigate } from "react-router-dom";
 function App() {
   const navigate = useNavigate();
 
-  let renderedTab;
-
   return (
     <div className="App m-3">
       <ul className="nav">
