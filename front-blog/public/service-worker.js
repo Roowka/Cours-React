@@ -1,20 +1,20 @@
 const APP_SHELL_CACHE = "app-shell";
 const POST_CACHE = "post-cache";
 
-const ROOT_URL = "http://127.0.0.1:3000";
+const ROOT_URL = "http://localhost:3000";
 
-const API_URL = "http://127.0.0.1:3001";
+const API_URL = "http://localhost:3001";
 
 const APP_SHELL_FILES = [
   "/",
   "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css",
   "/static/js/592.bcfbfc73.chunk.js",
   "/static/js/592.bcfbfc73.chunk.js.map",
-  "/static/js/main.1accf93b.js",
-  "/static/js/main.1accf93b.js.map",
-  "/static/css/main.e6c13ad2.css",
-  "/static/favicon.ico",
-  "/static/manifest.json",
+  "/static/js/main.7f814892.js",
+  "/static/js/main.7f814892.js.map",
+  "/static/css/main.31d6cfe0.css",
+  "/favicon.ico",
+  "/manifest.json",
 ];
 
 self.addEventListener("install", function (event) {
@@ -64,8 +64,10 @@ function getFromCacheOrNetwork(cache, request, onError = null) {
 }
 
 self.addEventListener("fetch", function (event) {
+  console.log(event.request.url.replace(ROOT_URL, ""));
   if (APP_SHELL_FILES.includes(event.request.url.replace(ROOT_URL, ""))) {
-    event.respondWith(getFromCache(POST_CACHE, event.request));
+    console.log("ici");
+    event.respondWith(getFromCache(APP_SHELL_CACHE, event.request));
   } else if (event.request.url.startsWith(API_URL)) {
     event.respondWith(getFromCacheOrNetwork(POST_CACHE, event.request));
   } else {
