@@ -1,3 +1,5 @@
+importScripts("idb.js");
+
 const APP_SHELL_CACHE = "app-shell";
 const POST_CACHE = "post-cache";
 
@@ -15,6 +17,7 @@ const APP_SHELL_FILES = [
   "/static/css/main.31d6cfe0.css",
   "/favicon.ico",
   "/manifest.json",
+  "/idb.js",
 ];
 
 self.addEventListener("install", function (event) {
@@ -39,6 +42,28 @@ function getFromCache(cache, request) {
         console.log("Couldn't find " + request.url + " in cache.");
       }
     });
+  });
+}
+
+function getFromNetworkOrCache(cacheName, request) {
+  return caches.open(cacheName).then(function (cache) {
+    return fetch(request)
+      .then(function (networkResponse) {
+        console.log("Got from network");
+        cache.put(request, networkResponse.clone());
+        console.log("Update cache");
+        return networkResponse;
+      })
+      .catch(function (error) {
+        return cache.match(request).then(function (cacheResponse) {
+          if (cacheResponse) {
+            console.log("Got from cache");
+            return cacheResponse;
+          } else {
+            console.error("Couldn't fetch posts");
+          }
+        });
+      });
   });
 }
 
@@ -69,8 +94,35 @@ self.addEventListener("fetch", function (event) {
     console.log("ici");
     event.respondWith(getFromCache(APP_SHELL_CACHE, event.request));
   } else if (event.request.url.startsWith(API_URL)) {
-    event.respondWith(getFromCacheOrNetwork(POST_CACHE, event.request));
+    event.respondWith(getFromNetworkOrCache(POST_CACHE, event.request));
   } else {
     event.respondWith(fetch(event.request));
+  }
+});
+
+self.addEventListener("sync", function (event) {
+  console.log("[SW] Got a new event", event);
+
+  if (event.tag === "sync-new-posts") {
+    idb.openDB("offline-sync", 1, function (database) {
+      database.getAll("posts").then(function (posts) {
+        for (const post of posts) {
+          fetch(`${API_URL}/posts`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(post),
+          }).then(function (response) {
+            if (response.ok) {
+              database.delete("posts", post.id);
+              console.log("Post sync success");
+            } else {
+              console.log("Post sync failed");
+            }
+          });
+        }
+      });
+    });
   }
 });

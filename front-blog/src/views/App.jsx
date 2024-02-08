@@ -1,6 +1,8 @@
 import "./App.css";
 import Post from "../components/post";
 import { useEffect, useState } from "react";
+import NotificationManager from "../components/notificationManager";
+import { openDB } from "idb";
 
 function App() {
   const API_URL = "http://localhost:3001/posts";
@@ -43,8 +45,20 @@ function App() {
       );
       await fetchPosts();
     } catch (error) {
-      throw error;
+      saveLater(formData);
     }
+  }
+
+  async function saveLater(post) {
+    const database = await openDB("offline-sync", 1, {
+      upgrade(db) {
+        db.createObjectStore("posts", { keyPath: "_id", autoIncfrement: true });
+      },
+    });
+    await database.add("post", post);
+
+    const serviceWorker = await navigator.serviceWorker.ready;
+    await serviceWorker.sync.register("sync-new-posts");
   }
 
   useEffect(() => {
@@ -75,6 +89,7 @@ function App() {
           <button className="btn btn-primary mt-3" onClick={createPost}>
             Ajouter un post
           </button>
+          <NotificationManager />
         </div>
         <div>
           {posts.map((post) => (
